@@ -5,14 +5,12 @@
 ```
 export SPARK_HOME="/opt/spark/spark-1.5.1-bin-hadoop2.6"
 export MASTER="local-cluster[3,2,4096]"
-cd ~/personal_projects/learning/spark/
 /opt/spark/sparkling-water-1.5.6/bin/sparkling-shell  --conf "spark.executor.memory=2g"
-export DATA_PATH="~/"
 ```
 2. Carregando os dados
 ```
 // Input data
-val DATAFILE="/home/bkemmer/personal_projects/learn/h20-tutorials/data/smsData.txt"
+val DATAFILE="./data/smsData.txt"
 
 ```
 3. Importando as bibliotecas:
