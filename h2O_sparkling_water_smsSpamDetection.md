@@ -5,15 +5,13 @@
 ```
 export SPARK_HOME="/opt/spark/spark-1.5.1-bin-hadoop2.6"
 export MASTER="local-cluster[3,2,4096]"
-cd ~/personal_projects/learning/spark/
 /opt/spark/sparkling-water-1.5.6/bin/sparkling-shell  --conf "spark.executor.memory=2g"
-export DATA_PATH="~/"
 ```
 2. Carregando os dados
 ```
 // Input data
-val DATAFILE="/home/bkemmer/personal_projects/learn/h20-tutorials/data/smsData.txt"
-
+val DATAFILE="/home/bkemmer/projects/h2O-tutorials-adapted/data/smsData.txt"
+// val DATAFILE="/home/bkemmer/personal_projects/learn/h2O-tutorials-adapted/data/smsData.txt"
 ```
 3. Importando as bibliotecas:
 ```
@@ -172,4 +170,46 @@ tableHF.delete()
 // Build final DeepLearning model
 val dlModel = buildDLModel(trainHF, validHF)(h2oContext)
 ```
-12. 
+12. Análise da qualidade do modelo:
+```
+// Collect model metrics and evaluate model quality
+import water.app.ModelMetricsSupport
+val trainMetrics = ModelMetricsSupport.binomialMM(dlModel, trainHF)
+val validMetrics = ModelMetricsSupport.binomialMM(dlModel, validHF)
+println(trainMetrics.auc._auc)
+println(validMetrics.auc._auc)
+```
+13. Análise de performance 
+```
+// no H2O UI: visualiza a performance do modelo
+getPredictions 
+// no H2O UI: mostra o output do modelo
+getModels
+```
+14. Criando um detector de SPAM:
+```
+// Spam detector
+def isSpam(msg: String,
+        dlModel: DeepLearningModel,
+        hashingTF: HashingTF,
+        idfModel: IDFModel,
+        h2oContext: H2OContext,
+        hamThreshold: Double = 0.5):String = {
+   val msgRdd = sc.parallelize(Seq(msg))
+   val msgVector: DataFrame = idfModel.transform(
+                               hashingTF.transform (
+                                 tokenize (msgRdd))).map(v => SMS("?", v)).toDF
+   val msgTable: H2OFrame = h2oContext.asH2OFrame(msgVector)
+   msgTable.remove(0) // remove first column
+   val prediction = dlModel.score(msgTable)
+
+   if (prediction.vecs()(1).at(0) < hamThreshold) "SPAM DETECTED!" else "HAM"
+}   
+```
+
+15. Tentando detectar se a mensagem é SPAM:
+```
+isSpam("Michal, h2oworld party tonight in MV?", dlModel, hashingTF, idfModel, h2oContext)
+// 
+isSpam("We tried to contact you re your reply to our offer of a Video Handset? 750 anytime any networks mins? UNLIMITED TEXT?", dlModel, hashingTF, idfModel, h2oContext)
+```
